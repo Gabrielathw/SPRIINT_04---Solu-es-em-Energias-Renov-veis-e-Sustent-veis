@@ -1,0 +1,15 @@
+# Backend
+__pycache__/
+*.pyc
+chargevolt.db
+.env
+
+# Frontend (Expo/React Native)
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Sistema (Windows/Mac)
+.DS_Store
+Thumbs.db
