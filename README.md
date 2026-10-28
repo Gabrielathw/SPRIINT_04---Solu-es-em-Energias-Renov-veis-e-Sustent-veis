@@ -56,3 +56,17 @@ pip install fastapi uvicorn
 
 # Inicie o servidor
 uvicorn main:app --reload --host 0.0.0.0
+
+### Passo 2: Rodar o Frontend (App)
+# Entre na pasta do frontend
+cd frontend
+
+# Instale as bibliotecas do Node
+npm install
+
+# Inicie o Expo
+npx expo start
+
+Como testar:
+
+No terminal do Expo, aperte a tecla w para abrir o aplicativo no seu navegador web.
