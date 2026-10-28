@@ -23,20 +23,26 @@ export default function LoginScreen({ navigation }) {
   const [senha, setSenha] = useState('');
 
   const handleLogin = async () => {
-    if (!username || !senha) {
+    // .trim() remove espaços acidentais do começo e do fim
+    const userLimpo = username.trim();
+    const senhaLimpa = senha.trim();
+
+    if (!userLimpo || !senhaLimpa) {
       showAlert('Aviso', 'Preencha usuário e senha.');
       return;
     }
     try {
-      await fazerLogin(username, senha);
-      navigation.navigate('MainTabs', { username });
+      await fazerLogin(userLimpo, senhaLimpa);
+      navigation.navigate('MainTabs', { username: userLimpo });
     } catch (erro) {
       showAlert('Erro', erro.message);
     }
   };
 
   const handleForgotPassword = async () => {
-    if (!username) {
+    const userLimpo = username.trim();
+    
+    if (!userLimpo) {
       showAlert('Aviso', 'Digite seu usuário primeiro.');
       return;
     }
@@ -44,7 +50,7 @@ export default function LoginScreen({ navigation }) {
       const res = await fetch(`${getApiUrl()}/reset_senha`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ username: userLimpo }),
       });
       const data = await res.json();
       if (res.ok) showAlert('Sucesso', data.mensagem);
@@ -80,7 +86,6 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-// ... (mantenha os mesmos styles de antes)
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#2E86AB', justifyContent: 'center', padding: 24 },
   titulo: { fontSize: 36, fontWeight: 'bold', color: '#FFF', textAlign: 'center', marginBottom: 40 },

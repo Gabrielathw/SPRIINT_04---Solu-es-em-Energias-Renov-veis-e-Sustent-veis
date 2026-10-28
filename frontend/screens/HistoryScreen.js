@@ -1,87 +1,139 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { buscarHistorico } from './api';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from './context/ThemeContext';
+import { buscarHistorico, buscarAgendamentos } from './api';
 
-export default function HistoryScreen({ route, navigation }) {
+export default function HistoryScreen({ route }) {
   const { username } = route.params;
-  const [historico, setHistorico] = useState([]);
+  const { theme } = useTheme();
+  
+  const [abaAtiva, setAbaAtiva] = useState('recargas'); // 'recargas' ou 'agendamentos'
+  const [recargas, setRecargas] = useState([]);
+  const [agendamentos, setAgendamentos] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    carregarHistorico();
+    carregarDados();
   }, []);
 
-  const carregarHistorico = async () => {
+  const carregarDados = async () => {
+    setCarregando(true);
     try {
-      const res = await buscarHistorico(username);
-      setHistorico(res.historico);
-    } catch (erro) {
-      console.error(erro);
+      const resRecargas = await buscarHistorico(username);
+      setRecargas(resRecargas.historico || []);
+      
+      const resAgendamentos = await buscarAgendamentos(username);
+      setAgendamentos(resAgendamentos.agendamentos || []);
+    } catch (error) {
+      console.log("Erro ao carregar dados:", error);
     } finally {
       setCarregando(false);
     }
   };
 
+  // Formata a data de AAAA-MM-DD para DD/MM/AAAA
+  const formatarDataBR = (dataStr) => {
+    if (!dataStr) return '';
+    const [ano, mes, dia] = dataStr.split('-');
+    return `${dia}/${mes}/${ano}`;
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.titulo}>Histórico de Recargas</Text>
-        <Text style={styles.subtitulo}>Usuário: {username}</Text>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      {/* CABEÇALHO */}
+      <View style={[styles.header, { backgroundColor: theme.primary }]}>
+        <Text style={styles.headerTitle}>Meu Histórico</Text>
+        <Text style={styles.headerSubtitle}>Usuário: {username}</Text>
       </View>
 
+      {/* ABAS INTERNAS */}
+      <View style={{ flexDirection: 'row', padding: 20, paddingBottom: 10 }}>
+        <TouchableOpacity 
+          style={[styles.tabButton, { backgroundColor: abaAtiva === 'recargas' ? theme.primary : theme.card, borderColor: theme.primary }]}
+          onPress={() => setAbaAtiva('recargas')}
+        >
+          <Text style={{ color: abaAtiva === 'recargas' ? '#FFF' : theme.text, fontWeight: 'bold' }}>Recargas</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.tabButton, { backgroundColor: abaAtiva === 'agendamentos' ? theme.primary : theme.card, borderColor: theme.primary }]}
+          onPress={() => setAbaAtiva('agendamentos')}
+        >
+          <Text style={{ color: abaAtiva === 'agendamentos' ? '#FFF' : theme.text, fontWeight: 'bold' }}>Agendamentos</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* LISTA DE DADOS */}
       {carregando ? (
-        <ActivityIndicator size="large" color="#2E86AB" style={{ marginTop: 50 }} />
+        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 50 }} />
       ) : (
-        <ScrollView contentContainerStyle={styles.lista}>
-          {historico.length === 0 ? (
-            <Text style={styles.textoVazio}>Nenhuma recarga realizada ainda.</Text>
-          ) : (
-            historico.map((item) => (
-              <View key={item.id} style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardData}>{item.data_hora}</Text>
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeTexto}>{item.status}</Text>
+        <ScrollView contentContainerStyle={{ padding: 20 }}>
+          
+          {/* MOSTRAR RECARGAS */}
+          {abaAtiva === 'recargas' && (
+            recargas.length === 0 ? (
+              <Text style={{ textAlign: 'center', color: theme.subtext, marginTop: 20 }}>Nenhuma recarga realizada.</Text>
+            ) : (
+              recargas.map((item) => (
+                <View key={item.id} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                  <View style={styles.row}>
+                    <Text style={{ color: theme.text, fontWeight: 'bold' }}>Recarga Concluída</Text>
+                    <Text style={{ color: theme.subtext, fontSize: 12 }}>{formatarDataBR(item.data_hora.split(' ')[0])}</Text>
+                  </View>
+                  <View style={styles.row}>
+                    <Text style={{ color: theme.subtext }}>Energia: <Text style={{ color: theme.text, fontWeight: 'bold' }}>{item.kwh.toFixed(2)} KWh</Text></Text>
+                    <Text style={{ color: theme.primary, fontWeight: 'bold' }}>R$ {item.custo.toFixed(2)}</Text>
                   </View>
                 </View>
-                <View style={styles.cardInfo}>
-                  <View>
-                    <Text style={styles.label}>Energia</Text>
-                    <Text style={styles.valor}>{item.kwh} KWh</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.label}>Valor Pago</Text>
-                    <Text style={[styles.valor, { color: '#10B981' }]}>R$ {item.custo.toFixed(2)}</Text>
-                  </View>
-                </View>
-              </View>
-            ))
+              ))
+            )
           )}
+
+          {/* MOSTRAR AGENDAMENTOS */}
+          {abaAtiva === 'agendamentos' && (
+            agendamentos.length === 0 ? (
+              <Text style={{ textAlign: 'center', color: theme.subtext, marginTop: 20 }}>Nenhum agendamento encontrado.</Text>
+            ) : (
+              agendamentos.map((item) => (
+                <View key={item.id} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                  <View style={styles.row}>
+                    <Text style={{ color: theme.text, fontWeight: 'bold' }}>{item.estacao}</Text>
+                    <View style={{ backgroundColor: item.status.includes('Pendente') ? '#FEF3C7' : '#D1FAE5', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
+                      <Text style={{ color: item.status.includes('Pendente') ? '#D97706' : '#059669', fontSize: 10, fontWeight: 'bold' }}>
+                        {item.status}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.row}>
+                    <Text style={{ color: theme.subtext }}>Data/Hora:</Text>
+                    <Text style={{ color: theme.text, fontWeight: 'bold' }}>{formatarDataBR(item.data)} às {item.hora}</Text>
+                  </View>
+                  <View style={styles.row}>
+                    <Text style={{ color: theme.subtext }}>Energia:</Text>
+                    <Text style={{ color: theme.text, fontWeight: 'bold' }}>{item.kwh.toFixed(2)} KWh</Text>
+                  </View>
+                  <View style={[styles.row, { marginTop: 5, borderTopWidth: 1, borderColor: theme.border, paddingTop: 5 }]}>
+                    <Text style={{ color: theme.text, fontWeight: 'bold' }}>Valor:</Text>
+                    <Text style={{ color: theme.primary, fontWeight: 'bold', fontSize: 16 }}>R$ {item.custo.toFixed(2)}</Text>
+                  </View>
+                </View>
+              ))
+            )
+          )}
+
         </ScrollView>
       )}
-
-      <TouchableOpacity style={styles.botaoVoltar} onPress={() => navigation.goBack()}>
-        <Text style={styles.textoBotao}>Voltar para Nova Recarga</Text>
-      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
-  header: { backgroundColor: '#2E86AB', padding: 20, paddingTop: 40, paddingBottom: 20 },
-  titulo: { fontSize: 24, fontWeight: 'bold', color: '#FFF' },
-  subtitulo: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
-  lista: { padding: 20 },
-  textoVazio: { textAlign: 'center', color: '#666', marginTop: 20, fontSize: 16 },
-  card: { backgroundColor: '#FFF', borderRadius: 12, padding: 16, marginBottom: 12, elevation: 2 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  cardData: { fontSize: 12, color: '#666' },
-  badge: { backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  badgeTexto: { color: '#10B981', fontSize: 12, fontWeight: 'bold' },
-  cardInfo: { flexDirection: 'row', justifyContent: 'space-between' },
-  label: { fontSize: 12, color: '#999', marginBottom: 4 },
-  valor: { fontSize: 16, fontWeight: 'bold', color: '#1A1A1A' },
-  botaoVoltar: { backgroundColor: '#FFF', padding: 16, alignItems: 'center', borderTopWidth: 1, borderColor: '#EEE' },
-  textoBotao: { color: '#2E86AB', fontSize: 16, fontWeight: 'bold' }
+  container: { flex: 1 },
+  header: { padding: 20, paddingTop: 60 },
+  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#FFF' },
+  headerSubtitle: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
+  tabButton: { flex: 1, paddingVertical: 12, borderWidth: 2, borderRadius: 10, alignItems: 'center', marginHorizontal: 5 },
+  card: { padding: 15, borderRadius: 12, borderWidth: 2, marginBottom: 10 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }
 });

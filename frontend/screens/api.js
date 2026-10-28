@@ -1,21 +1,4 @@
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
-
-const API_PORT = 8000;
-
-const getApiUrl = () => {
-  const hostUri = Constants.expoConfig?.hostUri;
-  const devHost = hostUri?.split(':')[0];
-  if (devHost && devHost !== 'localhost' && devHost !== '127.0.0.1') {
-    return `http://${devHost}:${API_PORT}`;
-  }
-  if (Platform.OS === 'android') {
-    return `http://10.0.2.2:${API_PORT}`; 
-  }
-  return `http://localhost:${API_PORT}`;
-};
-
-const BASE_URL = getApiUrl();
+const BASE_URL = 'http://localhost:8000';
 
 export const fazerLogin = async (username, senha) => {
   const resposta = await fetch(`${BASE_URL}/login`, {
@@ -28,11 +11,11 @@ export const fazerLogin = async (username, senha) => {
   return dados;
 };
 
-export const realizarRecarga = async (username, kwh_desejado, hora_simulada) => {
+export const realizarRecarga = async (username, kwh_desejado, hora_simulada, usar_pontos = false) => {
   const resposta = await fetch(`${BASE_URL}/realizar_recarga`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, kwh_desejado, hora_simulada }),
+    body: JSON.stringify({ username, kwh_desejado, hora_simulada, usar_pontos }),
   });
   return await resposta.json();
 };
@@ -43,12 +26,22 @@ export const buscarHistorico = async (username) => {
   return await resposta.json();
 };
 
-// FUNÇÃO DE AGENDAR ATUALIZADA
+export const buscarAgendamentos = async (username) => {
+  const resposta = await fetch(`${BASE_URL}/agendamentos/${username}`);
+  if (!resposta.ok) throw new Error('Erro ao buscar agendamentos');
+  return await resposta.json();
+};
+
 export const agendarRecarga = async (username, estacao, data, hora, kwh, custo, status_pagamento) => {
   const resposta = await fetch(`${BASE_URL}/agendar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, estacao, data, hora, kwh, custo, status_pagamento }),
   });
+  return await resposta.json();
+};
+
+export const buscarPontos = async (username) => {
+  const resposta = await fetch(`${BASE_URL}/pontos/${username}`);
   return await resposta.json();
 };
